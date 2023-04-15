@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -18,8 +19,8 @@ namespace Futarapp.Controllers
         public AuthControler(IConfiguration configuration)
         {
             _configuration = configuration;
-        } 
-
+        }
+        
         [HttpPost("register")]
         public async Task<ActionResult<User>> Register(UserDto request)
         {
