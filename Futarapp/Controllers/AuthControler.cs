@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Futarapp.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
@@ -12,7 +13,7 @@ namespace Futarapp.Controllers
     [ApiController]
     public class AuthControler : ControllerBase
     {
-        public static User user = new User();
+        public static User2 user2 = new User2();
         private readonly IConfiguration _configuration;
 
 
@@ -26,33 +27,33 @@ namespace Futarapp.Controllers
         {
             CreatePassworldHash(request.Password, out byte[] passwordHash, out byte[] passwordSalt);
 
-            user.Username = request.Username;
-            user.PasswordHash = passwordHash;
-            user.PasswordSalt = passwordSalt;
+            user2.Username = request.Username;
+            user2.PasswordHash = passwordHash;
+            user2.PasswordSalt = passwordSalt;
 
-            return Ok(user);
+            return Ok(user2);
 
         }
 
         [HttpPost("login")]
         public async Task<ActionResult<string>> Login(UserDto request)
         {
-            if(user.Username != request.Username)
+            if(user2.Username != request.Username)
             {
                 return BadRequest("User not found.");
             }
 
-            if (!VerifyPassWordHash(request.Password, user.PasswordHash, user.PasswordSalt))
+            if (!VerifyPassWordHash(request.Password, user2.PasswordHash, user2.PasswordSalt))
             {
                 return BadRequest("Wrong password.");
             }
 
-            string token = CreateToken(user);
+            string token = CreateToken(user2);
 
             return Ok(token);
         }
 
-        private string CreateToken(User user)
+        private string CreateToken(User2 user)
         {
             List<Claim> claims = new List<Claim>
             {

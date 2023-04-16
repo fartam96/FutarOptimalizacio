@@ -1,6 +1,6 @@
 ﻿namespace Futarapp
 {
-    public class User
+    public class User2
     {
         public string Username { get; set; } = string.Empty;
 
