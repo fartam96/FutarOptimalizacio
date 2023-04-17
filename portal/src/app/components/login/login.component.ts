@@ -5,7 +5,9 @@ import {
   FormGroup,
   Validators,
 } from '@angular/forms';
+import { Router } from '@angular/router';
 import ValidateForm from 'src/app/helpers/validateform';
+import { AuthService } from 'src/app/services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -19,7 +21,11 @@ export class LoginComponent implements OnInit {
 
   loginForm!: FormGroup;
 
-  constructor(private fb: FormBuilder) {}
+  constructor(
+    private fb: FormBuilder,
+    private auth: AuthService,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
     this.loginForm = this.fb.group({
@@ -34,9 +40,19 @@ export class LoginComponent implements OnInit {
     this.isText ? (this.type = 'text') : (this.type = 'password');
   }
 
-  onSubmit() {
+  onLogin() {
     if (this.loginForm.valid) {
       console.log(this.loginForm.value);
+      this.auth.login(this.loginForm.value).subscribe({
+        next: (res) => {
+          alert(res.message);
+          this.loginForm.reset();
+          this.router.navigate(['mainpage']);
+        },
+        error: (err) => {
+          alert(err?.error.message);
+        },
+      });
       //send to database
     } else {
       ValidateForm.validateAllFormFields(this.loginForm);
