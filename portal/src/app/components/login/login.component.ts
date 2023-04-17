@@ -47,23 +47,24 @@ export class LoginComponent implements OnInit {
       console.log(this.loginForm.value);
       this.auth.login(this.loginForm.value).subscribe({
         next: (res) => {
+          console.log(res.message);
+          this.loginForm.reset();
           this.toast.success({
             detail: 'SUCCESS',
             summary: res.message,
             duration: 5000,
           });
-          this.loginForm.reset();
           this.router.navigate(['mainpage']);
         },
         error: (err) => {
           this.toast.error({
-            detail: 'Error',
-            summary: 'Something went wrong',
-            duration: 3000,
+            detail: 'ERROR',
+            summary: 'Something when wrong!',
+            duration: 5000,
           });
+          console.log(err);
         },
       });
-      //send to database
     } else {
       ValidateForm.validateAllFormFields(this.loginForm);
     }

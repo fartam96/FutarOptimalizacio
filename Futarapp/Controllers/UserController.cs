@@ -1,5 +1,6 @@
-﻿using Futarapp.Context;
-using Futarapp.Helpers;
+﻿using AngularAuthYtAPI.Helpers;
+using Futarapp.Context;
+
 using Futarapp.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -22,24 +23,24 @@ namespace Futarapp.Controllers
         }
 
         [HttpPost("authenticate")]
-        public async Task<IActionResult> Authenticate([FromBody] User userobj)
+        public async Task<IActionResult> Authenticate([FromBody] User userObj)
         {
-            if(userobj == null)
-            {
+            if (userObj == null)
                 return BadRequest();
-            }
-            var user = await appDbContext.users.FirstOrDefaultAsync(x => x.UserName == userobj.UserName);
-            if(user == null)
+
+            var user = await appDbContext.users
+                .FirstOrDefaultAsync(x => x.UserName == userObj.UserName);
+
+            if (user == null)
+                return NotFound(new { Message = "User not found!" });
+
+            if (!PasswordHasher.VerifyPassword(userObj.password, user.password))
             {
-                return NotFound(new { Message = "user not found" });
+                return BadRequest(new { Message = "Password is Incorrect" });
             }
 
-            if(!PasswordHasher.VerifyPassword(userobj.password, user.password))
-            {
-                return BadRequest(new { Message = "password is incorrect" });
-            }
-
-            return Ok(new { Message = " login succes"});
+            return Ok(new { Message = "login succes" });
+            
         }
 
         [HttpPost("register")]
