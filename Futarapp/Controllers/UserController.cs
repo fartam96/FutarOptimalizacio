@@ -28,10 +28,15 @@ namespace Futarapp.Controllers
             {
                 return BadRequest();
             }
-            var user = await appDbContext.users.FirstOrDefaultAsync(x => x.UserName == userobj.UserName && x.password == userobj.password);
+            var user = await appDbContext.users.FirstOrDefaultAsync(x => x.UserName == userobj.UserName);
             if(user == null)
             {
                 return NotFound(new { Message = "user not found" });
+            }
+
+            if(!PasswordHasher.VerifyPassword(userobj.password, user.password))
+            {
+                return BadRequest(new { Message = "password is incorrect" });
             }
 
             return Ok(new { Message = " login succes"});
@@ -110,7 +115,7 @@ namespace Futarapp.Controllers
 
         private bool IsValid(string email)
         {
-            string regex = @"^[^@\s]+@[^@\s]+\.(com|net|org|gov)$";
+            string regex = @"^[a-z0-9]+@[a-z]+\.[a-z]{2,3}$";
 
             return Regex.IsMatch(email, regex, RegexOptions.IgnoreCase);
         }
