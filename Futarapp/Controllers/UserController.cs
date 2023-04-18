@@ -1,13 +1,17 @@
-﻿using AngularAuthYtAPI.Helpers;
+﻿using Futarapp.Helpers;
 using Futarapp.Context;
-
 using Futarapp.Models;
-using Microsoft.AspNetCore.Http;
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System;
+
+using Microsoft.IdentityModel.Tokens;
+
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Futarapp.Controllers
 {
@@ -16,10 +20,12 @@ namespace Futarapp.Controllers
     public class UserController : ControllerBase
     {
         private readonly AppDbContext appDbContext;
+        private readonly IConfiguration _configuration;
 
-        public UserController(AppDbContext appDbContext)
+        public UserController(AppDbContext appDbContext, IConfiguration configuration)
         {
             this.appDbContext = appDbContext;
+            _configuration = configuration;
         }
 
         [HttpPost("authenticate")]
@@ -39,7 +45,12 @@ namespace Futarapp.Controllers
                 return BadRequest(new { Message = "Password is Incorrect" });
             }
 
-            return Ok(new { Message = "login succes" });
+            user.Token = CreateToken(user);
+
+            return Ok(new { 
+                Token = user.Token,
+                Message = "login succes" 
+            });
             
         }
 
@@ -119,6 +130,59 @@ namespace Futarapp.Controllers
             string regex = @"^[a-z0-9]+@[a-z]+\.[a-z]{2,3}$";
 
             return Regex.IsMatch(email, regex, RegexOptions.IgnoreCase);
+        }
+
+        private string CreateJwt(User user)
+        {
+            var jwtTokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.ASCII.GetBytes("veryverysceret.....");
+            var identity = new ClaimsIdentity(new Claim[]
+            {
+                new Claim(ClaimTypes.Role, user.Role),
+                new Claim(ClaimTypes.Name,$"{user.UserName}")
+            });
+
+            var credentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256);
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = identity,
+                Expires = DateTime.Now.AddDays(1),
+                SigningCredentials = credentials
+            };
+            var token = jwtTokenHandler.CreateToken(tokenDescriptor);
+            return jwtTokenHandler.WriteToken(token);
+        }
+
+        private string CreateToken(User user)
+        {
+            List<Claim> claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Role, user.Role),
+                new Claim(ClaimTypes.Name,$"{user.UserName}")
+            };
+
+            var key = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(
+                _configuration.GetSection("AppSettings:Token").Value));
+
+            var cred = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
+
+            var token = new JwtSecurityToken(
+                claims: claims,
+                expires: DateTime.Now.AddHours(1),
+                signingCredentials: cred
+                );
+
+            var jwt = new JwtSecurityTokenHandler().WriteToken(token);
+
+            return jwt;
+        }
+
+        [Authorize]
+        [HttpGet]
+        public async Task<ActionResult<User>> GetAllUsers()
+        {
+            return Ok(await appDbContext.users.ToListAsync());
         }
     }
 }

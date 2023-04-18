@@ -1,6 +1,6 @@
 ﻿using System.Security.Cryptography;
 
-namespace AngularAuthYtAPI.Helpers
+namespace Futarapp.Helpers
 {
     public class PasswordHasher
     {
