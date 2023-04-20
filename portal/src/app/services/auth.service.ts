@@ -8,7 +8,10 @@ import { JwtHelperService } from '@auth0/angular-jwt';
 })
 export class AuthService {
   private baseUrl: string = 'https://localhost:7148/api/User/';
-  constructor(private http: HttpClient, private router: Router) {}
+  private userPayload: any;
+  constructor(private http: HttpClient, private router: Router) {
+    this.userPayload = this.decodedToken();
+  }
 
   signUp(userObj: any) {
     return this.http.post<any>(`${this.baseUrl}register`, userObj);
@@ -46,5 +49,13 @@ export class AuthService {
     const token = this.getToken()!;
     console.log(jwtHelper.decodeToken(token));
     return jwtHelper.decodeToken(token);
+  }
+
+  getfullNameFromToken() {
+    if (this.userPayload) return this.userPayload.unique_name;
+  }
+
+  getRoleFromToken() {
+    if (this.userPayload) return this.userPayload.role;
   }
 }

@@ -4,11 +4,13 @@ import { LoginComponent } from './components/login/login.component';
 import { SignupComponent } from './components/signup/signup.component';
 import { MainpageComponent } from './components/mainpage/mainpage.component';
 import { AuthGuard } from './guards/auth.guard';
+import { ResetComponent } from './components/reset/reset.component';
 
 const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'signup', component: SignupComponent },
   { path: 'mainpage', component: MainpageComponent, canActivate: [AuthGuard] },
+  { path: 'reset', component: ResetComponent },
 ];
 
 @NgModule({

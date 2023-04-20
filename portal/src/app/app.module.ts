@@ -10,6 +10,8 @@ import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
 import { MainpageComponent } from './components/mainpage/mainpage.component';
 import { NgToastModule, NgToastService } from 'ng-angular-popup';
 import { TokenInterceptor } from './interceptors/token.interceptor';
+import { FormsModule } from '@angular/forms';
+import { ResetComponent } from './components/reset/reset.component';
 
 @NgModule({
   declarations: [
@@ -17,6 +19,7 @@ import { TokenInterceptor } from './interceptors/token.interceptor';
     LoginComponent,
     SignupComponent,
     MainpageComponent,
+    ResetComponent,
   ],
   imports: [
     BrowserModule,
@@ -24,6 +27,7 @@ import { TokenInterceptor } from './interceptors/token.interceptor';
     ReactiveFormsModule,
     HttpClientModule,
     NgToastModule,
+    FormsModule,
   ],
   providers: [
     {

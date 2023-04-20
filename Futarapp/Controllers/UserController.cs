@@ -12,6 +12,10 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Cryptography;
+using Microsoft.Extensions.Configuration;
+using static Org.BouncyCastle.Math.EC.ECCurve;
+using Futarapp.Services;
 
 namespace Futarapp.Controllers
 {
@@ -21,11 +25,13 @@ namespace Futarapp.Controllers
     {
         private readonly AppDbContext appDbContext;
         private readonly IConfiguration _configuration;
+        private IEmailSender _emailSender;
 
-        public UserController(AppDbContext appDbContext, IConfiguration configuration)
+        public UserController(AppDbContext appDbContext, IConfiguration configuration, IEmailSender emailSender)
         {
             this.appDbContext = appDbContext;
             _configuration = configuration;
+            _emailSender = emailSender;
         }
 
         [HttpPost("authenticate")]
@@ -45,97 +51,77 @@ namespace Futarapp.Controllers
                 return BadRequest(new { Message = "Password is Incorrect" });
             }
 
-            user.Token = CreateToken(user);
+            user.Token = CreateJwt(user);
+            var newAccessToken = user.Token;
+            await appDbContext.SaveChangesAsync();
 
-            return Ok(new { 
+            return Ok(new
+            {
                 Token = user.Token,
-                Message = "login succes" 
+                Message = "login succes"
             });
-            
         }
 
         [HttpPost("register")]
-        public async Task<IActionResult> RegisterUser([FromBody] User userobj, string passwordHasher)
+        public async Task<IActionResult> Register([FromBody] User userObj)
         {
-            if (userobj == null)
+            if (userObj == null)
             {
                 return BadRequest();
             }
+                
 
-            if(await CheckUserNameExistAsync(userobj.UserName))
-            {
-                return BadRequest(new { Message = "username already exist" });
-            }
-
-            if (!IsValid(userobj.Email))
+            if (!IsValid(userObj.Email))
             {
                 return BadRequest(new { Message = "wrong email format" });
             }
 
-            if (await CheckEmailExistAsync(userobj.Email))
-            {
-                return BadRequest(new { Message = "email already exist" });
-            }
+            // check email
+            if (await CheckEmailExistAsync(userObj.Email))
+                return BadRequest(new { Message = "Email Already Exist" });
 
-            var pass = CheckPasswordStrength(userobj.password);
-            if (!string.IsNullOrEmpty(pass))
-            {
-                return BadRequest(new { Message = pass.ToString() });
-            }
+            //check username
+            if (await CheckUsernameExistAsync(userObj.UserName))
+                return BadRequest(new { Message = "Username Already Exist" });
 
-            userobj.password = PasswordHasher.HashPassword(userobj.password);
-            userobj.Role = "User";
-            userobj.Token = "";
-            await appDbContext.users.AddAsync(userobj);
+            var passMessage = CheckPasswordStrength(userObj.password);
+            if (!string.IsNullOrEmpty(passMessage))
+                return BadRequest(new { Message = passMessage.ToString() });
+
+            userObj.password = PasswordHasher.HashPassword(userObj.password);
+            userObj.Role = "User";
+            userObj.Token = "";
+            await appDbContext.AddAsync(userObj);
             await appDbContext.SaveChangesAsync();
-            return Ok(new { Message= "user registered"});    
+            return Ok(new
+            {
+                Status = 200,
+                Message = "User registered!"
+            });
         }
 
-        private async Task<bool> CheckUserNameExistAsync(string userName) 
-        {
-            return await appDbContext.users.AnyAsync(x => x.UserName == userName);
+        private Task<bool> CheckEmailExistAsync(string? email)
+            => appDbContext.users.AnyAsync(x => x.Email == email);
 
+        private Task<bool> CheckUsernameExistAsync(string? username)
+            => appDbContext.users.AnyAsync(x => x.Email == username);
 
-        }
-
-        private async Task<bool> CheckEmailExistAsync(string email)
-        {
-            return await appDbContext.users.AnyAsync(x => x.Email == email);
-
-        }
-
-        private string CheckPasswordStrength(string password)
+        private static string CheckPasswordStrength(string pass)
         {
             StringBuilder sb = new StringBuilder();
-            if(password.Length < 8)
-            {
-                sb.Append("Minimum password lenght is 8"+ Environment.NewLine);
-            }
-            if (!(Regex.IsMatch(password, "[a-z]") && Regex.IsMatch(password, "[A-Z]")
-                && Regex.IsMatch(password, "[0-9]")))
-            {
-                sb.Append("password should have capital letter small letter and number" + Environment.NewLine);
-            }
-
-            if(!(Regex.IsMatch(password, "[<,>,@,!,#,$,%,^,&,*,*,(,),_,+,\\[,\\],{,},?,:,;,|;',\\,,.,/,~,`,-,=]")))
-            {
-                sb.Append("Password should contain special character" + Environment.NewLine);
-            }
-
+            if (pass.Length < 9)
+                sb.Append("Minimum password length should be 8" + Environment.NewLine);
+            if (!(Regex.IsMatch(pass, "[a-z]") && Regex.IsMatch(pass, "[A-Z]") && Regex.IsMatch(pass, "[0-9]")))
+                sb.Append("Password should be AlphaNumeric" + Environment.NewLine);
+            if (!Regex.IsMatch(pass, "[<,>,@,!,#,$,%,^,&,*,(,),_,+,\\[,\\],{,},?,:,;,|,',\\,.,/,~,`,-,=]"))
+                sb.Append("Password should contain special charcter" + Environment.NewLine);
             return sb.ToString();
-        }
-
-        private bool IsValid(string email)
-        {
-            string regex = @"^[a-z0-9]+@[a-z]+\.[a-z]{2,3}$";
-
-            return Regex.IsMatch(email, regex, RegexOptions.IgnoreCase);
         }
 
         private string CreateJwt(User user)
         {
             var jwtTokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes("veryverysceret.....");
+            var key = Encoding.ASCII.GetBytes(_configuration.GetSection("AppSettings:Token").Value);
             var identity = new ClaimsIdentity(new Claim[]
             {
                 new Claim(ClaimTypes.Role, user.Role),
@@ -154,29 +140,13 @@ namespace Futarapp.Controllers
             return jwtTokenHandler.WriteToken(token);
         }
 
-        private string CreateToken(User user)
+        private bool IsValid(string email)
         {
-            List<Claim> claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Role, user.Role),
-                new Claim(ClaimTypes.Name,$"{user.UserName}")
-            };
+            string regex = @"^[a-z0-9]+@[a-z]+\.[a-z]{2,3}$";
 
-            var key = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(
-                _configuration.GetSection("AppSettings:Token").Value));
-
-            var cred = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
-
-            var token = new JwtSecurityToken(
-                claims: claims,
-                expires: DateTime.Now.AddHours(1),
-                signingCredentials: cred
-                );
-
-            var jwt = new JwtSecurityTokenHandler().WriteToken(token);
-
-            return jwt;
+            return Regex.IsMatch(email, regex, RegexOptions.IgnoreCase);
         }
+
 
         [Authorize]
         [HttpGet]
@@ -184,5 +154,69 @@ namespace Futarapp.Controllers
         {
             return Ok(await appDbContext.users.ToListAsync());
         }
+
+        [HttpPost("resetemail/{email}")]
+        public async Task<IActionResult> SendEmail(string email)
+        {
+            
+            var user = await appDbContext.users.FirstOrDefaultAsync(x=> x.Email==email);
+            if (user==null)
+            {
+                return NotFound("Email doesnt exist");
+            }
+
+            var tokenBytes = RandomNumberGenerator.GetBytes(64);
+            var emailToken = Convert.ToBase64String(tokenBytes);
+            user.ResetPasswordToken = emailToken;
+            user.ResetPasswordExpiry = DateTime.Now.AddMinutes(10);
+
+            var message = new Message(new string[] { email }, "Reset Password", EmailBody.EmailStrinngBody(email, emailToken));
+           
+
+            _emailSender.SendEmails(message);
+
+            appDbContext.Entry(user).State = EntityState.Modified;
+            await appDbContext.SaveChangesAsync();
+
+            return Ok(new
+            {
+                StatusCode = 200,
+                Message = "Email sent!"
+            });
+
+        }
+
+        [HttpPost("resetpass")]
+        public async Task<IActionResult> ResetPassword(ResetPassModel resetpass)
+        {
+            var newToken = resetpass.EmailToken.Replace(" ", "+");
+            var user = await appDbContext.users.AsNoTracking().FirstOrDefaultAsync(x => x.Email == resetpass.Email);
+
+            if (user == null)
+            {
+                return NotFound("Email doesnt exist");
+            }
+
+            var tokenCode = user.ResetPasswordToken;
+            DateTime emailTokenExp = user.ResetPasswordExpiry;
+
+            if(tokenCode != resetpass.EmailToken || emailTokenExp < DateTime.Now)
+            {
+                return BadRequest("invalid reset link");
+            }
+
+            user.password = PasswordHasher.HashPassword(resetpass.NewPassword);
+            appDbContext.Entry(user).State = EntityState.Modified;
+            await appDbContext.SaveChangesAsync();
+
+            return Ok(new
+            {
+                StatusCode = 200,
+                Message = "Reset is succesfull"
+            });
+        }
+   
+
+
     }
 }

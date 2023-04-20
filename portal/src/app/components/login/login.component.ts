@@ -9,6 +9,8 @@ import { Router } from '@angular/router';
 import { NgToastService } from 'ng-angular-popup';
 import ValidateForm from 'src/app/helpers/validateform';
 import { AuthService } from 'src/app/services/auth.service';
+import { ResetPassService } from 'src/app/services/reset-pass.service';
+import { UserStoreService } from 'src/app/services/user-store.service';
 
 @Component({
   selector: 'app-login',
@@ -19,14 +21,18 @@ export class LoginComponent implements OnInit {
   type: string = 'password';
   isText: boolean = false;
   eyeIcon: string = 'fa-eye-slash';
+  public resetPasswordEmail!: string;
+  public isValidEmail!: boolean;
 
   loginForm!: FormGroup;
 
   constructor(
+    private resetService: ResetPassService,
     private fb: FormBuilder,
     private auth: AuthService,
     private router: Router,
-    private toast: NgToastService
+    private toast: NgToastService,
+    private userStore: UserStoreService
   ) {}
 
   ngOnInit(): void {
@@ -50,6 +56,9 @@ export class LoginComponent implements OnInit {
           console.log(res.message);
           this.loginForm.reset();
           this.auth.storeToken(res.token);
+          const tokenPayload = this.auth.decodedToken();
+          this.userStore.setFullNameForStore(tokenPayload.unique_name);
+          this.userStore.setRoleForStore(tokenPayload.role);
           this.toast.success({
             detail: 'SUCCESS',
             summary: res.message,
@@ -69,5 +78,37 @@ export class LoginComponent implements OnInit {
     } else {
       ValidateForm.validateAllFormFields(this.loginForm);
     }
+  }
+
+  checkValidEmail(event: string) {
+    const value = event;
+    const pattern = /^[a-z0-9]+@[a-z]+\.[a-z]{2,3}$/;
+    this.isValidEmail = pattern.test(value);
+    return this.isValidEmail;
+  }
+
+  confirmToSend() {
+    if (this.checkValidEmail(this.resetPasswordEmail))
+      console.log(this.resetPasswordEmail);
+
+    this.resetService.sendResetPasswordLink(this.resetPasswordEmail).subscribe({
+      next: (res) => {
+        this.toast.success({
+          detail: 'Succes',
+          summary: 'Reset is succesfull',
+          duration: 3000,
+        });
+        this.resetPasswordEmail = '';
+        const buttonRef = document.getElementById('closeBtn');
+        buttonRef?.click();
+      },
+      error: (err) => {
+        this.toast.error({
+          detail: 'Error',
+          summary: 'Failed to reset pass',
+          duration: 3000,
+        });
+      },
+    });
   }
 }

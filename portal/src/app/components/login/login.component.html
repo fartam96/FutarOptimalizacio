@@ -22,7 +22,6 @@
                     type="text"
                     placeholder="Username"
                     name=""
-                    id=""
                   />
                 </div>
               </div>
@@ -48,7 +47,6 @@
                     [type]="type"
                     placeholder="Password"
                     name=""
-                    id=""
                   />
                   <span
                     (click)="hideShowPass()"
@@ -65,8 +63,12 @@
                 >*Password is required</small
               >
               <div class="form-inline fr mt-4">
-                <a href="" id="forget" class="font-weight-bold"
-                  >Forgot Password?</a
+                <a
+                  id="forgot"
+                  data-bs-toggle="modal"
+                  data-bs-target="#exampleModal"
+                  class="font-weight-bold"
+                  >Forgot password?</a
                 >
               </div>
               <button
@@ -82,26 +84,66 @@
               </div>
             </form>
           </div>
-          <div class="mx-3 my-2 py-2 bordert">
-            <div class="text-center py-3">
-              <a href="https://www.facebook.com" target="blank" class="px-2"
-                ><img
-                  src="https://www.dpreview.com/files/p/articles/4698742202/facebook.jpeg"
-                  alt=""
-              /></a>
-              <a href="https://www.google.com" target="blank" class="px-2"
-                ><img
-                  src="https://www.freepnglogos.com/uploads/google-logo-png/google-logo-png-suite-everything-you-need-know-about-google-newest-0.png"
-                  alt=""
-              /></a>
-              <a href="https://www.github.com" target="blank" class="px-2"
-                ><img
-                  src="https://www.freepnglogos.com/uploads/512x512-logo-png/512x512-logo-github-icon-35.png"
-                  alt=""
-              /></a>
-            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  id="exampleModal"
+  tabindex="-1"
+  aria-labelledby="exampleModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <p class="modal-title" id="exampleModalLabel">
+          <span style="font-size: 25px; font-weight: 700"
+            >Forget your password?</span
+          ><br />
+          <small>Please provide your E-mail we will send the reset link</small>
+        </p>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group pt-3">
+          <div class="input-field">
+            <span class="fa fa-user p-2"></span>
+            <input
+              [(ngModel)]="resetPasswordEmail"
+              (ngModelChange)="checkValidEmail($event)"
+              type="text"
+              placeholder="Email"
+            />
           </div>
         </div>
+        <small *ngIf="!resetPasswordEmail" class="text-danger"
+          >*Email is required*</small
+        >
+        <small *ngIf="!isValidEmail && resetPasswordEmail" class="text-danger"
+          >*Email is invalid*</small
+        >
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          id="closeBtn"
+          class="btn btn-secondary"
+          data-bs-dismiss="modal"
+        >
+          Close
+        </button>
+        <button type="button" (click)="confirmToSend()" class="btn btn-primary">
+          Send
+        </button>
       </div>
     </div>
   </div>
