@@ -4,8 +4,6 @@ namespace Futarapp.Helpers
 {
     public static class Shuffle
     {
-
-
         public static void ShuffleList<T>(this IList<T> list)
         {
             RNGCryptoServiceProvider provider = new RNGCryptoServiceProvider();
