@@ -1,15 +1,9 @@
 ﻿using Futarapp.Context;
 using Futarapp.Helpers;
 using Futarapp.Models;
-using Futarapp.Services;
 using Futarapp.TsPNN;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Razor.TagHelpers;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.RegularExpressions;
+using System.Diagnostics;
 
 namespace Futarapp.Controllers
 {
@@ -61,7 +55,7 @@ namespace Futarapp.Controllers
 
         private List<int> swap(List<int> order, int swapIndex1, int swapIndex2)
         {
-            if(swapIndex1< order.Count && swapIndex2 < order.Count && swapIndex1>=0 && swapIndex2>=0)
+            if (swapIndex1 < order.Count && swapIndex2 < order.Count && swapIndex1 >= 0 && swapIndex2 >= 0)
             {
                 int tempIndex = order[swapIndex1];
                 order[swapIndex1] = order[swapIndex2];
@@ -105,22 +99,25 @@ namespace Futarapp.Controllers
         [HttpGet("nearestNeighbor")]
         public IActionResult FindRouteWithNN()
         {
-            // Get cities x,y coordiates from file
             List<City> cities = CsvReader.ParseCitiesFromFile(TSPtest);
+
+            var timer = new Stopwatch();
+            timer.Start();
 
             TSPNearestNeighbour nn = new TSPNearestNeighbour(cities);
             nn.TSPNN();
+
+            timer.Stop();
+
+            TimeSpan timeTaken = timer.Elapsed;
 
 
             return Ok(new
             {
                 distance = nn.GetTotalDistanceRoute(),
-                cityOrder = nn.GetCitiesResultToString()
+                cityOrder = nn.GetCitiesResultToString(),
+                time = timeTaken
             });
-
-
-            ////
-            // return Json(nn.GetCitiesResult());
         }
 
 
@@ -136,6 +133,9 @@ namespace Futarapp.Controllers
 
             allOrder.Add(copy);
 
+            var timer = new Stopwatch();
+            timer.Start();
+
             var d = Distance();
             if (d < recordDistance)
             {
@@ -143,7 +143,7 @@ namespace Futarapp.Controllers
                 bestEver = new List<int>(order);
             }
 
-            for (int i = 0; i < ((diffrentOrders / 2)-1); i++)
+            for (int i = 0; i < ((diffrentOrders / 2) - 1); i++)
             {
                 nextOrder();
                 if (order == null)
@@ -159,18 +159,21 @@ namespace Futarapp.Controllers
                 }
             }
 
+            timer.Stop();
+
+            TimeSpan timeTaken = timer.Elapsed;
+
             return Ok(new
             {
                 status = 200,
                 bestEver = bestEver,
                 Recorddist = recordDistance,
-                allOrder = allOrder,
-                factorial = diffrentOrders,
                 Cities = cities,
+                time = timeTaken
             });
         }
 
-        private void  nextOrder()
+        private void nextOrder()
         {
 
             // STEP 1 of the algorithm
@@ -202,7 +205,7 @@ namespace Futarapp.Controllers
             swap(order, largestI, largestJ);
 
             // STEP 4: reverse from largestI + 1 to the end
-            order.Reverse(largestI+1,order.Count-(largestI+1));
+            order.Reverse(largestI + 1, order.Count - (largestI + 1));
 
             List<int> copy1 = new List<int>(order);
             allOrder.Add(copy1);

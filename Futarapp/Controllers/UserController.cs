@@ -1,20 +1,15 @@
 ﻿using Futarapp.Helpers;
 using Futarapp.Context;
 using Futarapp.Models;
-
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-
 using Microsoft.IdentityModel.Tokens;
-
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Cryptography;
-using Microsoft.Extensions.Configuration;
-using static Org.BouncyCastle.Math.EC.ECCurve;
 using Futarapp.Services;
 
 namespace Futarapp.Controllers
@@ -69,7 +64,7 @@ namespace Futarapp.Controllers
             {
                 return BadRequest();
             }
-                
+
 
             if (!IsValid(userObj.Email))
             {
@@ -158,9 +153,9 @@ namespace Futarapp.Controllers
         [HttpPost("resetemail/{email}")]
         public async Task<IActionResult> SendEmail(string email)
         {
-            
-            var user = await appDbContext.users.FirstOrDefaultAsync(x=> x.Email==email);
-            if (user==null)
+
+            var user = await appDbContext.users.FirstOrDefaultAsync(x => x.Email == email);
+            if (user == null)
             {
                 return NotFound("Email doesnt exist");
             }
@@ -171,7 +166,7 @@ namespace Futarapp.Controllers
             user.ResetPasswordExpiry = DateTime.Now.AddMinutes(10);
 
             var message = new Message(new string[] { email }, "Reset Password", EmailBody.EmailStrinngBody(email, emailToken));
-           
+
 
             _emailSender.SendEmails(message);
 
@@ -200,7 +195,7 @@ namespace Futarapp.Controllers
             var tokenCode = user.ResetPasswordToken;
             DateTime emailTokenExp = user.ResetPasswordExpiry;
 
-            if(tokenCode != resetpass.EmailToken || emailTokenExp < DateTime.Now)
+            if (tokenCode != resetpass.EmailToken || emailTokenExp < DateTime.Now)
             {
                 return BadRequest("invalid reset link");
             }
@@ -215,8 +210,5 @@ namespace Futarapp.Controllers
                 Message = "Reset is succesfull"
             });
         }
-   
-
-
     }
 }

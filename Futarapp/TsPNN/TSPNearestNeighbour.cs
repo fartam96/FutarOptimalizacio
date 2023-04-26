@@ -37,7 +37,7 @@ namespace Futarapp.TsPNN
             return sequence;
         }
 
-        
+
 
         /**
          * Main execution method.

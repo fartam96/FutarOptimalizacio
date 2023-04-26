@@ -1,5 +1,6 @@
 ﻿using Futarapp.Models;
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
 using System.Security.Cryptography;
 using static Org.BouncyCastle.Asn1.Cmp.Challenge;
 
@@ -24,6 +25,9 @@ namespace Futarapp.Controllers
         {
 
             CreateCitiesAndCourier(cityNumber, courierNumber);
+
+            var timer = new Stopwatch();
+            timer.Start();
 
 
             foreach (var city in cityList)
@@ -65,11 +69,15 @@ namespace Futarapp.Controllers
                 }
 
             }
+            timer.Stop();
+
+            TimeSpan timeTaken = timer.Elapsed;
 
             return Ok(new
             {
                 cities = cityList,
-                couriers = courierList
+                couriers = courierList,
+                timer = timeTaken
             });
 
         }
@@ -95,6 +103,9 @@ namespace Futarapp.Controllers
             CreateCitiesAndCourier(cityNumber, courierNumber);
 
             int counter = 0;
+
+            var timer = new Stopwatch();
+            timer.Start();
 
 
             while (cityToRand.Any()) {
@@ -144,13 +155,14 @@ namespace Futarapp.Controllers
                 cityToRand.RemoveAt(0);
 
             }
+            timer.Stop();
+
+            TimeSpan timeTaken = timer.Elapsed;
 
             return Ok(new
             {
-                cityList = cityList,
-                counter = counter,
-                cities = cityList,
-                couriers = courierList
+                couriers = courierList,
+                timer = timeTaken,
             });
 
         }
