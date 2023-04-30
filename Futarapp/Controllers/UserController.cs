@@ -65,7 +65,7 @@ namespace Futarapp.Controllers
                 return BadRequest();
             }
 
-
+            //check email format
             if (!IsValid(userObj.Email))
             {
                 return BadRequest(new { Message = "wrong email format" });
@@ -159,26 +159,19 @@ namespace Futarapp.Controllers
             {
                 return NotFound("Email doesnt exist");
             }
-
             var tokenBytes = RandomNumberGenerator.GetBytes(64);
             var emailToken = Convert.ToBase64String(tokenBytes);
             user.ResetPasswordToken = emailToken;
             user.ResetPasswordExpiry = DateTime.Now.AddMinutes(10);
-
             var message = new Message(new string[] { email }, "Reset Password", EmailBody.EmailStrinngBody(email, emailToken));
-
-
             _emailSender.SendEmails(message);
-
             appDbContext.Entry(user).State = EntityState.Modified;
             await appDbContext.SaveChangesAsync();
-
             return Ok(new
             {
                 StatusCode = 200,
                 Message = "Email sent!"
             });
-
         }
 
         [HttpPost("resetpass")]

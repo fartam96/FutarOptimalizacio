@@ -37,39 +37,28 @@ namespace Futarapp.TsPNN
             return sequence;
         }
 
-
-
-        /**
-         * Main execution method.
-         */
         public void TSPNN()
         {
 
             totalDistanceRoute = 0;
             totalDistanceRoute2 = 0;
 
-            // Create an array which will hold he cities route
             citiesResult = new List<City>();
 
-            // Get city with id 1 where to start from.
             City firstCity = cities.Where(c => c.id == 1).FirstOrDefault();
 
             City currentCity = firstCity;
 
-            // Add the city to route list
             AddCityToRoutesList(cities, citiesResult, currentCity);
 
             while (cities.Count > 0)
             {
 
-                // Get closes city
                 currentCity = FindClosestCity(cities, currentCity);
 
-                // Add to the total distance travelled.
                 totalDistanceRoute += currentCity.lastDistanceMeasured;
 
 
-                // Add the city to route list
                 AddCityToRoutesList(cities, citiesResult, currentCity);
             }
 
@@ -77,9 +66,7 @@ namespace Futarapp.TsPNN
 
         private void AddCityToRoutesList(List<City> cities, List<City> citiesResult, City currentCity)
         {
-            // Add viry to route
             citiesResult.Add(currentCity);
-            // Remove from remainign cities to visit list.
             cities.Remove(currentCity);
         }
 
@@ -88,7 +75,6 @@ namespace Futarapp.TsPNN
 
             City nearestCity;
 
-            // If only 1 remains, measure to the current city and return
             if (cities.Count == 1)
             {
                 nearestCity = cities[0];
@@ -97,8 +83,6 @@ namespace Futarapp.TsPNN
             }
             else
             {
-                // Find the closest city by comparing them all with 
-                // their respective position of the current city.
                 nearestCity =
                     cities.Aggregate((c1, c2) => c1.MeasureDistance(currentCity) < c2.MeasureDistance(currentCity) ? c1 : c2);
 

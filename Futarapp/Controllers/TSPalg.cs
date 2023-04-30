@@ -99,7 +99,9 @@ namespace Futarapp.Controllers
         [HttpGet("nearestNeighbor")]
         public IActionResult FindRouteWithNN()
         {
-            List<City> cities = CsvReader.ParseCitiesFromFile(TSPtest);
+            // List<City> cities = CsvReader.ParseCitiesFromFile(TSPtest);
+
+            CreateCitiesAndOrder(8, 400, 400);
 
             var timer = new Stopwatch();
             timer.Start();
@@ -150,7 +152,6 @@ namespace Futarapp.Controllers
                 {
                     break;
                 }
-
                 var k = Distance();
                 if (k < recordDistance)
                 {

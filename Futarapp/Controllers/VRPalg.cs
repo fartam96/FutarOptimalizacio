@@ -1,8 +1,6 @@
 ﻿using Futarapp.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
-using System.Security.Cryptography;
-using static Org.BouncyCastle.Asn1.Cmp.Challenge;
 
 namespace Futarapp.Controllers
 {
@@ -10,14 +8,15 @@ namespace Futarapp.Controllers
     {
 
         public List<Courier> courierList = new List<Courier>();
-        public SortedList<double,City> cityList = new SortedList<double, City>();
-        public List<City> cityToRand = new List<City>();    
+        public SortedList<double, City> cityList = new SortedList<double, City>();
+        public List<City> cityToRand = new List<City>();
+        public List<City> copyList = new List<City>();
         public TSPalg tsp;
 
 
         public VRPalg()
         {
-            
+
         }
 
         [HttpPost("VRPNN")]
@@ -25,6 +24,8 @@ namespace Futarapp.Controllers
         {
 
             CreateCitiesAndCourier(cityNumber, courierNumber);
+
+            double totalCost = 0;
 
             var timer = new Stopwatch();
             timer.Start();
@@ -37,13 +38,11 @@ namespace Futarapp.Controllers
 
                 double nextCityDist = Int32.MaxValue;
 
-                
-
                 for (int j = 0; j < courierList.Count; j++)
                 {
                     var cour = nextCityCost(city.Value, courierList[j]);
 
-                    if(cour.nextCityCost< nextCityDist)
+                    if (cour.nextCityCost < nextCityDist)
                     {
                         nextCityDist = cour.nextCityCost;
                         routeIndex = cour.insertIndex;
@@ -61,10 +60,13 @@ namespace Futarapp.Controllers
                 }
 
                 courierList[courierIndex].cost = nextCityDist;
-                foreach(var cour in courierList) 
+
+                
+                foreach (var cour in courierList)
                 {
                     cour.nextCityCost = 0;
                     cour.insertIndex = 0;
+                    totalCost += cour.cost;
 
                 }
 
@@ -75,7 +77,8 @@ namespace Futarapp.Controllers
 
             return Ok(new
             {
-                cities = cityList,
+                cost = totalCost,
+                cities = cityToRand,
                 couriers = courierList,
                 timer = timeTaken
             });
@@ -93,7 +96,7 @@ namespace Futarapp.Controllers
                 listToShuffle[k] = listToShuffle[i];
                 listToShuffle[i] = value;
             }
-           
+
         }
 
         [HttpPost("VRPNNRandom")]
@@ -102,13 +105,16 @@ namespace Futarapp.Controllers
 
             CreateCitiesAndCourier(cityNumber, courierNumber);
 
+            double totalCost = 0;
+
             int counter = 0;
 
             var timer = new Stopwatch();
             timer.Start();
 
 
-            while (cityToRand.Any()) {
+            while (cityToRand.Any())
+            {
                 counter++;
 
                 GenerateRandomLoop(cityToRand);
@@ -149,6 +155,7 @@ namespace Futarapp.Controllers
                 {
                     cour.nextCityCost = 0;
                     cour.insertIndex = 0;
+                    totalCost += cour.cost;
 
                 }
 
@@ -161,6 +168,8 @@ namespace Futarapp.Controllers
 
             return Ok(new
             {
+                cost = totalCost,
+                cities = copyList,
                 couriers = courierList,
                 timer = timeTaken,
             });
@@ -183,6 +192,7 @@ namespace Futarapp.Controllers
                 var dist = MeasureDistance(0, city.x, 0, city.y);
                 cityList.Add(dist, city);
                 cityToRand.Add(city);
+                copyList.Add(city);
 
             }
 
@@ -191,7 +201,7 @@ namespace Futarapp.Controllers
                 List<City> route = new List<City>();
                 City depo = new City((citynumber + i), 0, 0);
                 route.Add(depo);
-                Courier cour = new Courier(i, rnd.Next(15, 30), route,0,0,-1);
+                Courier cour = new Courier(i, rnd.Next(15, 30), route, 0, 0, -1);
                 courierList.Add(cour);
 
             }
@@ -203,7 +213,7 @@ namespace Futarapp.Controllers
             int index = 0;
             double mindistance = Int32.MaxValue;
 
-            for (int i = 0;i < courier.route.Count;i++)
+            for (int i = 0; i < courier.route.Count; i++)
             {
                 var dist = MeasureDistance(city.x, courier.route[i].x, city.y, courier.route[i].y);
                 if (dist < mindistance)
@@ -217,8 +227,8 @@ namespace Futarapp.Controllers
             List<City> insertBefor = new List<City>(courier.route);
             insertBefor.Insert(index, city);
             List<City> insertAfter = new List<City>(courier.route);
-            insertAfter.Insert(index+1,city);
-            
+            insertAfter.Insert(index + 1, city);
+
 
             double beforDist = Distance(insertBefor);
             double afterDist = Distance(insertAfter);
@@ -228,13 +238,13 @@ namespace Futarapp.Controllers
             Courier courier1 = courier;
             courier1.nextCityCost = (minDist - courier1.cost);
 
-            if(afterDist <= beforDist)
+            if (afterDist <= beforDist)
             {
-                courier1.insertIndex = (index+1);
+                courier1.insertIndex = (index + 1);
             }
             else
             {
-                courier1.insertIndex =index;
+                courier1.insertIndex = index;
             }
 
             return courier1;
@@ -251,7 +261,7 @@ namespace Futarapp.Controllers
             for (var i = 0; i < cities.Count - 1; i++)
             {
                 var cityA = cities[i];
-                var cityB = cities[i+1];
+                var cityB = cities[i + 1];
                 var d = MeasureDistance(cityA.x, cityB.x, cityA.y, cityB.y);
                 sum += d;
             }

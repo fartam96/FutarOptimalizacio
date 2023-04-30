@@ -59,7 +59,7 @@ namespace Futarapp.Helpers
     }
 }
 
-//< a href = ""http://localhost:4200/reset?email={{email}}&code={{emailToken}}"" target=""_blank"">Reset password link</a>
+
 
 
 
